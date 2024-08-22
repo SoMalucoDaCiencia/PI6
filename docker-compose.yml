@@ -1,4 +1,4 @@
-version: "3.7"
+version: "3.8"
 
 networks:
   mynetwork:
@@ -6,14 +6,28 @@ networks:
 
 services:
   database:
-    image: sqlite:latest
+    image: mcr.microsoft.com/mssql/server:latest
     container_name: PI6
     volumes:
-      - ./.docker/dbdata:/var/lib/mysql
+      - ./.docker/dbdata:/var/lib/sqlserver
+    environment:
+      SA_PASSWORD: "root1234"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P ${Sa_Password:-password123} -Q 'SELECT 1' || exit 1",
+        ]
+      interval: 10s
+      retries: 10
+      start_period: 10s
+      timeout: 3s
     expose:
-      - "5432"
+      - "1433"
     ports:
-      - "5432:5432"
+      - "1433:1433"
     restart: always
     tty: true
     networks:
