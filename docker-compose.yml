@@ -1,0 +1,20 @@
+version: "3.7"
+
+networks:
+  mynetwork:
+    driver: bridge
+
+services:
+  database:
+    image: sqlite:latest
+    container_name: PI6
+    volumes:
+      - ./.docker/dbdata:/var/lib/mysql
+    expose:
+      - "5432"
+    ports:
+      - "5432:5432"
+    restart: always
+    tty: true
+    networks:
+      - mynetwork
