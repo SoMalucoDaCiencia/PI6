@@ -1,4 +1,4 @@
-package src
+package database
 
 import (
 	"errors"
@@ -14,7 +14,12 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-func GetConnection() (*gorm.DB, error) {
+func CheckDatabase() error {
+	_, err := GetConn()
+	return err
+}
+
+func GetConn() (*gorm.DB, error) {
 
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
@@ -26,7 +31,7 @@ func GetConnection() (*gorm.DB, error) {
 		},
 	)
 
-	conn, err := gorm.Open(sqlserver.Open(GetDSN()), &gorm.Config{
+	conn, err := gorm.Open(sqlserver.Open(getDSN()), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
 		},
@@ -46,7 +51,7 @@ func GetConnection() (*gorm.DB, error) {
 }
 
 // GetDSN get DB's DSN based on env vars
-func GetDSN() string {
+func getDSN() string {
 
 	schema := viper.GetString("DB_SCHEMA")
 	if len(schema) == 0 {
@@ -73,5 +78,5 @@ func GetDSN() string {
 		log.Fatal(errors.New("unauthorized, expected an port for db"))
 	}
 
-	return fmt.Sprintf("sqlserver://gorm:%s@%s:%d?database=%s", user, address, port, schema)
+	return fmt.Sprintf("sqlserver://%s:%s@%s:%d?database=%s", user, password, address, port, schema)
 }
