@@ -3,5 +3,6 @@ package models
 type WeatherEnum string
 
 const (
-	rain WeatherEnum = "rain"
+	NoneWeather WeatherEnum = "none"
+	RainWeather WeatherEnum = "rain"
 )
