@@ -1,24 +1,23 @@
-version: "3.8"
-
 networks:
-  mynetwork:
-    driver: bridge
+   mynetwork:
+      driver: bridge
 
 services:
-  database:
-    image: mcr.microsoft.com/mssql/server:latest
-    container_name: PI6
-    volumes:
-      - ./.docker/dbdata:/var/lib/sqlserver
-    environment:
-      SA_PASSWORD: "Root1234@"
-      ACCEPT_EULA: "Y"
-      MSSQL_PID: "Developer"
-    expose:
-      - "1433"
-    ports:
-      - "1433:1433"
-    restart: always
-    tty: true
-    networks:
-      - mynetwork
+   database:
+      platform: linux/amd64
+      image: mcr.microsoft.com/mssql/server:latest
+      container_name: PI6
+      volumes:
+         - ./.docker/dbdata:/var/lib/sqlserver
+      environment:
+         SA_PASSWORD: "Root1234@"
+         ACCEPT_EULA: "Y"
+         MSSQL_PID: "Developer"
+      expose:
+         - "1433"
+      ports:
+         - "1433:1433"
+      restart: always
+      tty: true
+      networks:
+         - mynetwork
