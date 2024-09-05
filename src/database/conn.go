@@ -19,6 +19,7 @@ func CheckDatabase() error {
 	return err
 }
 
+// Get connection
 func GetConn() (*gorm.DB, error) {
 
 	newLogger := logger.New(
