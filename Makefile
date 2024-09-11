@@ -4,7 +4,10 @@ update:
 	git fetch --prune && git pull;
 
 # Inicia o docker-compose.yml
-# Uma vez que o docker esteja rodando, inicia o go
 run:
-	docker-compose up -d && \
-	go run src/core/main.go;
+	docker-compose up -d
+
+recompile:
+	clear; \
+	docker rm -f /go-app-pi6; docker rmi $$(docker images | grep 'go-app-pi6'); \
+	make run;

@@ -6,7 +6,7 @@ services:
    database:
       platform: linux/amd64
       image: mcr.microsoft.com/mssql/server:latest
-      container_name: PI6
+      container_name: sql-app-pi6
       volumes:
          - ./.docker/dbdata:/var/lib/sqlserver
       environment:
@@ -21,3 +21,17 @@ services:
       tty: true
       networks:
          - mynetwork
+   app:
+      image: go-app-pi6:latest
+      container_name: go-app-pi6
+      build:
+         context: ./src
+         dockerfile: Dockerfile
+      networks:
+         - mynetwork
+      env_file:
+         - ".env"
+         - ".env.docker"
+      restart: on-failure
+      depends_on:
+         - database

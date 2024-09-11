@@ -1,7 +1,7 @@
 package models
 
 import (
-	src "PI6/share"
+	share "PI6/share"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -31,20 +31,20 @@ func (r *Register) AsString() string {
 	return string(data)
 }
 
-func ExtractRegister(origin GeoPos, destiny []GeoPos) (ret []Register, err error) {
+func ExtractRegister(token string, origin GeoPos, destiny []GeoPos) (ret []Register, err error) {
 
 	response := []byte{}
 	headers := map[string]string{
 		"Host":          "go-app",
-		"Authorization": "Bearer " + src.AppleToken,
+		"Authorization": "Bearer " + share.AppleToken,
 	}
 
-	url := fmt.Sprintf(src.AppleURI, fmt.Sprintf("%.6f,%.6f", origin.Lat, origin.Long))
+	url := fmt.Sprintf(token, fmt.Sprintf("%.6f,%.6f", origin.Lat, origin.Long))
 	for _, gp := range destiny {
 		url += fmt.Sprintf("%g,%g|", gp.Lat, gp.Long)
 	}
 
-	_, err = src.Rest("GET", url[:len(url)-2], &response, headers, nil, nil)
+	_, err = share.Rest("GET", url[:len(url)-2], &response, headers, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -55,11 +55,11 @@ func ExtractRegister(origin GeoPos, destiny []GeoPos) (ret []Register, err error
 		return nil, err
 	}
 
-	originUUID := src.FloatsAsUUID(origin.Lat, origin.Long)
+	originUUID := share.FloatsAsUUID(origin.Lat, origin.Long)
 	for _, eta := range f.Etas {
 		ret = append(ret, Register{
 			Origin:    &originUUID,
-			Destiny:   mine.Ptr(src.FloatsAsUUID(eta.Destination.Lat, eta.Destination.Long)),
+			Destiny:   mine.Ptr(share.FloatsAsUUID(eta.Destination.Lat, eta.Destination.Long)),
 			Transport: (*TransportEnum)(&eta.TransportType),
 			CreatedAt: mine.Ptr(time.Now()),
 			Distance:  mine.Ptr[uint32](uint32(eta.DistanceMeters)),

@@ -38,6 +38,9 @@ func GetConn() (*gorm.DB, error) {
 		},
 		Logger: newLogger,
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	sqlDb, err := conn.DB()
 	if err != nil {

@@ -2,33 +2,40 @@ package src
 
 import (
 	src "PI6"
+	log "PI6/share/log"
 	"time"
 
-	"github.com/go-co-op/gocron"
+	gocron "github.com/go-co-op/gocron/v2"
 	"github.com/spf13/viper"
 )
 
 func Setup() error {
 	viper.AutomaticEnv()
-	viper.SetConfigFile("../.env")
-	return viper.ReadInConfig()
+	if !viper.GetBool("DOCKER") {
+		viper.SetConfigFile("../.env")
+		return viper.ReadInConfig()
+	}
+	return nil
 }
 
-func LaunchCronTasks() (err error) {
+func LaunchCronTasks() (s gocron.Scheduler, err error) {
 
-	s := gocron.NewScheduler(time.UTC)
-	_, err = s.Every(2).Hours().Do(func() (ret []error) {
-		src.MainRoutine()
-		return ret
-	})
+	s, err = gocron.NewScheduler()
 	if err != nil {
-		return err
+		return s, err
 	}
 
-	if s.Len() <= 0 {
-		WriteLog(LogInfo, "Cron has no task", "")
-		return nil
+	_, err = s.NewJob(gocron.DurationJob(3*time.Hour), gocron.NewTask(src.MainRoutine))
+	if err != nil {
+		return s, err
 	}
-	s.StartAsync()
-	return nil
+
+	c := len(s.Jobs())
+	if c <= 0 {
+		log.WriteLog(log.LogInfo, "Cron has no task", "")
+		return s, nil
+	}
+
+	s.Start()
+	return s, nil
 }
