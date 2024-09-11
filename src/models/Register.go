@@ -1,7 +1,7 @@
 package models
 
 import (
-	"PI6/src"
+	src "PI6/share"
 	"encoding/json"
 	"fmt"
 	"time"

@@ -1,7 +1,7 @@
 package database
 
 import (
-	"PI6/src/models"
+	"PI6/models"
 
 	"gorm.io/gorm"
 )

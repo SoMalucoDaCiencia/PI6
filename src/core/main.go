@@ -1,9 +1,9 @@
 package main
 
 import (
-	"PI6/src"
-	"PI6/src/database"
-	"PI6/src/models"
+	"PI6/database"
+	"PI6/models"
+	src "PI6/share"
 	"fmt"
 )
 
