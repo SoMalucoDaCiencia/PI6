@@ -1,12 +1,13 @@
 package models
 
 type GeoPos struct {
-	lat, long float32
+	Lat  float64 `json:"latitude"`
+	Long float64 `json:"longitude"`
 }
 
-func NewGeoPos(lat, long float32) GeoPos {
+func NewGeoPos(lat, long float64) GeoPos {
 	return GeoPos{
-		lat:  lat,
-		long: long,
+		Lat:  lat,
+		Long: long,
 	}
 }

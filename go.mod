@@ -6,6 +6,7 @@ require (
 	github.com/artking28/myGoUtils v1.1.0
 	github.com/spf13/viper v1.19.0
 	golang.org/x/net v0.23.0
+	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/sqlserver v1.5.3
 	gorm.io/gorm v1.25.11
 )
