@@ -13,11 +13,19 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("an error occurred while starting application: %v", err.Error()))
 	}
+	src.WriteLog(src.LogOk, "environment variables set up successfully", "")
 
 	err = database.CheckDatabase()
 	if err != nil {
 		panic(fmt.Errorf("an error occurred while starting application: %v", err.Error()))
 	}
+	src.WriteLog(src.LogOk, "SQL Server is up and running", "")
+
+	err = src.LaunchCronTasks()
+	if err != nil {
+		panic(fmt.Errorf("an error occurred while starting application: %v", err.Error()))
+	}
+	src.WriteLog(src.LogOk, "cron launched with success", "")
 
 	pos1 := models.NewGeoPos(37.331423, -122.030503)
 	pos2 := []models.GeoPos{
@@ -27,7 +35,9 @@ func main() {
 
 	all, err := models.ExtractRegister(pos1, pos2)
 	if err != nil {
-		panic(fmt.Errorf("an error occurred while extracting register: %v", err.Error()))
+		err = fmt.Errorf("an error occurred while extracting register: %v", err.Error())
+		src.WriteLog(src.LogErr, err.Error(), "apple")
+		panic(err.Error())
 	}
 
 	println()
