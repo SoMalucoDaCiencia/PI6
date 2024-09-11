@@ -1,6 +1,7 @@
 package src
 
 import (
+	src "PI6"
 	"time"
 
 	"github.com/go-co-op/gocron"
@@ -17,7 +18,7 @@ func LaunchCronTasks() (err error) {
 
 	s := gocron.NewScheduler(time.UTC)
 	_, err = s.Every(2).Hours().Do(func() (ret []error) {
-
+		src.MainRoutine()
 		return ret
 	})
 	if err != nil {
