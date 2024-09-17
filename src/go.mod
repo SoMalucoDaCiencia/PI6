@@ -4,6 +4,8 @@ go 1.20
 
 require (
 	github.com/artking28/myGoUtils v1.1.0
+	github.com/go-co-op/gocron/v2 v2.11.0
+	github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1
 	github.com/spf13/viper v1.19.0
 	golang.org/x/net v0.23.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -13,8 +15,6 @@ require (
 
 require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/go-co-op/gocron v1.37.0 // indirect
-	github.com/go-co-op/gocron/v2 v2.11.0 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect

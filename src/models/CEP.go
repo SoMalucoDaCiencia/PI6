@@ -3,9 +3,9 @@ package models
 import "fmt"
 
 type Address struct {
-	Cep      string `json:"cep"`
-	District string `json:"destiny"`
-	Street   string `json:"createdAt"`
+	District string  `json:"District"`
+	Lat      float64 `json:"Lat"`
+	Long     float64 `json:"Long"`
 }
 
 func (this Address) ToString() string {
