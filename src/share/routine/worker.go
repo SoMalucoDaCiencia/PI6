@@ -13,12 +13,12 @@ import (
 	"github.com/gocarina/gocsv"
 )
 
-func MainRoutine() error {
+func MainRoutine(async bool) error {
 	start := time.Now()
 
 	// Abre o arquivo dos distritos de São Paulo.
 	// ######################################################
-	file, err := os.OpenFile("../misc/distritos.csv", os.O_RDWR|os.O_CREATE, os.ModePerm)
+	file, err := os.OpenFile("misc/distritos.csv", os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		fmt.Print("err", err.Error())
 		panic(err)
@@ -78,35 +78,50 @@ func MainRoutine() error {
 		// Separa os destinos em blocos de dez unidades .
 		// ######################################################
 		for i := 0; i < len(vec); i += 10 {
-			wg.Add(1)
+			if async {
+				wg.Add(1)
+			}
 			if i+10 < len(vec) {
-				callWorker(&wg, atg, ad0, vec[i:i+10])
+				callWorker(async, &wg, atg, ad0, vec[i:i+10])
 				continue
 			}
-			callWorker(&wg, atg, ad0, vec[i:])
+			callWorker(async, &wg, atg, ad0, vec[i:])
 		}
 	}
 
 	// Espera todas as threads e finaliza a rotina.
 	// ######################################################
-	wg.Wait()
+	if async {
+		wg.Wait()
+	}
 	log.WriteLog(log.LogOk, "routine completed in "+time.Since(start).String(), "")
 	return nil
 }
 
 var Pendencies = map[string][][]*models.Address{}
 
-func callWorker(wg *sync.WaitGroup, atg models.AppleTokenGetter, ad0 *models.Address, to []*models.Address) {
+func callWorker(async bool, wg *sync.WaitGroup, atg models.AppleTokenGetter, ad0 *models.Address, to []*models.Address) {
+	if !async {
+		err := worker(nil, atg, ad0, to)
+		if err != nil {
+			log.WriteLog(log.LogErr, err.Error(), "")
+			Pendencies[ad0.GetUuid()] = append(Pendencies[ad0.GetUuid()], to)
+		}
+		return
+	}
 	go func() {
 		err := worker(wg, atg, ad0, to)
 		if err != nil {
+			log.WriteLog(log.LogErr, err.Error(), "")
 			Pendencies[ad0.GetUuid()] = append(Pendencies[ad0.GetUuid()], to)
 		}
 	}()
 }
 
 func worker(wg *sync.WaitGroup, atg models.AppleTokenGetter, from *models.Address, to []*models.Address) error {
-	defer wg.Done()
+	if wg != nil {
+		defer wg.Done()
+	}
 
 	// Abre uma conexão com o banco.
 	// ######################################################

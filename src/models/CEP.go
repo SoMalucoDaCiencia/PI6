@@ -4,8 +4,8 @@ import "PI6/share"
 
 type Address struct {
 	District string  `json:"District"`
-	Lat      float64 `json:"Lat"`
-	Long     float64 `json:"Long"`
+	Lat      float64 `json:"latitude"`
+	Long     float64 `json:"longitude"`
 }
 
 func (this *Address) GetUuid() string {
