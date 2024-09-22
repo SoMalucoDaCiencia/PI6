@@ -1,10 +1,10 @@
 package main
 
 import (
-	_ "PI6/database"
-	log "PI6/share/log"
+	"PI6/database"
+	"PI6/share"
+	"PI6/share/log"
 	"PI6/share/routine"
-	share "PI6/share"
 	"fmt"
 )
 
@@ -16,19 +16,17 @@ func main() {
 	}
 	log.WriteLog(log.LogOk, "environment variables set up successfully", "")
 
-	// err = database.CheckDatabase()
-	// if err != nil {
-	// 	panic(fmt.Errorf("an error occurred while starting application: %v", err.Error()))
-	// }
-	// log.WriteLog(log.LogOk, "SQL Server is up and running", "")
-
-	s, err := routine.LaunchCronTasks()
+	err = database.CheckDatabase()
 	if err != nil {
 		panic(fmt.Errorf("an error occurred while starting application: %v", err.Error()))
 	}
-	if len(s.Jobs()) > 0 {
-		log.WriteLog(log.LogOk, "cron launched with success", "")
+	log.WriteLog(log.LogOk, "SQL Server is up and running", "")
+
+	err = routine.LaunchCronTasks()
+	if err != nil {
+		panic(fmt.Errorf("an error occurred while starting application: %v", err.Error()))
 	}
+	log.WriteLog(log.LogOk, "cron launched with success", "")
 
 	// Bloqueie indefinidamente
 	<-make(chan struct{})

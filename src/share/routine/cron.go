@@ -1,31 +1,29 @@
 package routine
 
 import (
-	"time"
 	log "PI6/share/log"
+	"time"
 
-
-	gocron "github.com/go-co-op/gocron/v2"
+	"github.com/go-co-op/gocron"
 )
 
-func LaunchCronTasks() (s gocron.Scheduler, err error) {
+func LaunchCronTasks() (err error) {
 
-	s, err = gocron.NewScheduler()
-	if err != nil {
-		return s, err
+	s := gocron.NewScheduler(time.UTC)
+
+	if _, err = s.Every(1).Minutes().Do(func() {
+		if err := MainRoutine(); err != nil {
+			log.WriteLog(log.LogErr, err.Error(), "database")
+		}
+	}); err != nil {
+		println("ta aqui")
+		return err
 	}
 
-	_, err = s.NewJob(gocron.DurationJob(3*time.Hour), gocron.NewTask(MainRoutine))
-	if err != nil {
-		return s, err
-	}
-
-	c := len(s.Jobs())
-	if c <= 0 {
+	if s.Len() <= 0 {
 		log.WriteLog(log.LogInfo, "Cron has no task", "")
-		return s, nil
+		return nil
 	}
-
-	s.Start()
-	return s, nil
+	s.StartAsync()
+	return nil
 }

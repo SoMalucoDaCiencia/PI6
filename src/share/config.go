@@ -1,4 +1,4 @@
-package src
+package share
 
 import (
 	"github.com/spf13/viper"

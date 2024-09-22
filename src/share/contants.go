@@ -1,4 +1,4 @@
-package src
+package share
 
 const (
 	AppleURI   = "https://maps-api.apple.com/v1/etas?origin=%s&destinations="

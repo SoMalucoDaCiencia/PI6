@@ -1,6 +1,7 @@
 package database
 
 import (
+	"PI6/models/entity"
 	"errors"
 	"fmt"
 	"log"
@@ -15,8 +16,12 @@ import (
 )
 
 func CheckDatabase() error {
-	_, err := GetConn()
-	return err
+	db, err := GetConn()
+	if err != nil {
+		return err
+	}
+
+	return db.AutoMigrate(&entity.Register{}, &entity.Token{})
 }
 
 // Get connection
@@ -48,8 +53,8 @@ func GetConn() (*gorm.DB, error) {
 	}
 
 	sqlDb.SetConnMaxLifetime(time.Minute * 2)
-	sqlDb.SetMaxIdleConns(15)
-	sqlDb.SetMaxOpenConns(15)
+	sqlDb.SetMaxIdleConns(500)
+	sqlDb.SetMaxOpenConns(500)
 	sqlDb.SetConnMaxIdleTime(time.Minute * 2)
 	return conn, nil
 }

@@ -1,10 +1,9 @@
 module PI6
 
-go 1.20
+go 1.22
 
 require (
-	github.com/artking28/myGoUtils v1.1.0
-	github.com/go-co-op/gocron/v2 v2.11.0
+	github.com/go-co-op/gocron v1.37.0
 	github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1
 	github.com/spf13/viper v1.19.0
 	golang.org/x/net v0.23.0
@@ -21,7 +20,6 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/jonboulle/clockwork v0.4.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/microsoft/go-mssqldb v1.6.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
