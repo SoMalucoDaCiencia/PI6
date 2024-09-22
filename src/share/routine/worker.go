@@ -13,6 +13,8 @@ import (
 	"github.com/gocarina/gocsv"
 )
 
+var AppleRestCalls = 0
+
 func MainRoutine(async bool) error {
 	start := time.Now()
 
@@ -94,7 +96,8 @@ func MainRoutine(async bool) error {
 	if async {
 		wg.Wait()
 	}
-	log.WriteLog(log.LogOk, "routine completed in "+time.Since(start).String(), "")
+	log.WriteLog(log.LogOk, fmt.Sprintf("routine completed in %s with %d calls", time.Since(start).String(), AppleRestCalls), "")
+	AppleRestCalls = 0
 	return nil
 }
 
@@ -136,6 +139,7 @@ func worker(wg *sync.WaitGroup, atg models.AppleTokenGetter, from *models.Addres
 		log.WriteLog(log.LogErr, err.Error(), "apple")
 		panic(err.Error())
 	}
+	AppleRestCalls += 3
 
 	// Faz a inserção no banco.
 	// ######################################################
