@@ -2,6 +2,7 @@ package share
 
 import (
 	"encoding/binary"
+	"github.com/google/uuid"
 	"math"
 	"time"
 )
@@ -13,10 +14,10 @@ func GetTimestamps(year, month, day int) (time.Time, time.Time) {
 }
 
 func FloatsAsUUID(f1, f2 float64) string {
-	var uuid []byte
-	uuid = binary.BigEndian.AppendUint64(uuid, math.Float64bits(f1))
-	uuid = binary.BigEndian.AppendUint64(uuid, math.Float64bits(f2))
-	return string((uuid[:]))
+	var vec []byte
+	vec = binary.BigEndian.AppendUint64(vec, math.Float64bits(f1))
+	vec = binary.BigEndian.AppendUint64(vec, math.Float64bits(f2))
+	return uuid.NewMD5(uuid.NameSpaceDNS, vec[:]).String()
 }
 
 func FloatsFromUUID(uuid []byte) (float64, float64) {

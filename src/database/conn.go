@@ -24,6 +24,16 @@ func CheckDatabase() error {
 	return db.AutoMigrate(&entity.Register{}, &entity.Token{})
 }
 
+func CloseConn(db *gorm.DB) error {
+	sqlDB, err := db.DB()
+	if err != nil {
+		return err
+	}
+
+	// Close
+	return sqlDB.Close()
+}
+
 // Get connection
 func GetConn() (*gorm.DB, error) {
 
@@ -53,8 +63,8 @@ func GetConn() (*gorm.DB, error) {
 	}
 
 	sqlDb.SetConnMaxLifetime(time.Minute * 2)
-	sqlDb.SetMaxIdleConns(500)
-	sqlDb.SetMaxOpenConns(500)
+	sqlDb.SetMaxIdleConns(1000)
+	sqlDb.SetMaxOpenConns(1000)
 	sqlDb.SetConnMaxIdleTime(time.Minute * 2)
 	return conn, nil
 }

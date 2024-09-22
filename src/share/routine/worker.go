@@ -13,6 +13,96 @@ import (
 	"github.com/gocarina/gocsv"
 )
 
+func MainRoutine() error {
+	start := time.Now()
+
+	// Abre o arquivo dos distritos de São Paulo.
+	// ######################################################
+	file, err := os.OpenFile("../misc/distritos.csv", os.O_RDWR|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		fmt.Print("err", err.Error())
+		panic(err)
+	}
+	defer file.Close()
+
+	// Faz o parse para os objetos.
+	// ######################################################
+	var all []*models.Address
+	err = gocsv.UnmarshalFile(file, &all)
+	if err != nil {
+		return err
+	}
+
+	// Abre uma conexão com o banco.
+	// ######################################################
+	db, err := database.GetConn()
+	if err != nil {
+		return err
+	}
+
+	// Seleciona um token válido no banco.
+	// ######################################################
+	var tokens []entity.Token
+	db = db.Model(&entity.Token{}).Where("createdAt >= DATEADD(week, -1, GETDATE())").First(&tokens)
+	if db.Error != nil {
+		return db.Error
+	}
+
+	// Usa o token como seed para extrair um token válido no servidor da apple.
+	// ######################################################################################
+	atg, err := entity.ExtractToken(tokens[0].Value)
+	if db.Error != nil {
+		return db.Error
+	}
+
+	// Faz um for-loop por todos os endereços.
+	// ######################################################
+	var wg sync.WaitGroup
+	for k, ad0 := range all {
+
+		// Manipulação de arrays para evitar confusão com ponteiros
+		// ##########################################################
+		vec := make([]*models.Address, len(all))
+		copy(vec[:], all[:])
+		vec = append(vec[:k], vec[k+1:]...)
+
+		// Se o token não estiver mais valido, extraia outro.
+		// ######################################################
+		if !atg.IsValid() {
+			err := atg.Renew()
+			if err != nil {
+				return err
+			}
+		}
+
+		// Separa os destinos em blocos de dez unidades .
+		// ######################################################
+		for i := 0; i < len(vec); i += 10 {
+			wg.Add(1)
+			if i+9 < len(vec) {
+				callWorker(&wg, atg, ad0, vec[i:i+9])
+				continue
+			}
+			callWorker(&wg, atg, ad0, vec[i:])
+		}
+	}
+
+	wg.Wait()
+	log.WriteLog(log.LogOk, "routine completed in "+time.Since(start).String(), "")
+	return nil
+}
+
+var Pendencies = map[string][][]*models.Address{}
+
+func callWorker(wg *sync.WaitGroup, atg models.AppleTokenGetter, ad0 *models.Address, to []*models.Address) {
+	go func() {
+		err := worker(wg, atg, ad0, to)
+		if err != nil {
+			Pendencies["ds"] = append(Pendencies["dsa"], to)
+		}
+	}()
+}
+
 func worker(wg *sync.WaitGroup, atg models.AppleTokenGetter, from *models.Address, to []*models.Address) error {
 	defer wg.Done()
 
@@ -20,24 +110,6 @@ func worker(wg *sync.WaitGroup, atg models.AppleTokenGetter, from *models.Addres
 	if err != nil {
 		return err
 	}
-
-	// origin := models.NewGeoPos(37.331423, -122.030503)
-	// destinies := []models.GeoPos{
-	// 	models.NewGeoPos(37.32556561130194, -121.94635203581443),
-	// 	models.NewGeoPos(37.44176585512703, -122.17259315798667),
-	// }
-
-	// all, err := models.ExtractRegister(origin, destinies)
-	// if err != nil {
-	// 	err = fmt.Errorf("an error occurred while extracting register: %v", err.Error())
-	// 	src.WriteLog(src.LogErr, err.Error(), "apple")
-	// 	panic(err.Error())
-	// }
-
-	// println()
-	// for _, r := range all {
-	// 	println(r.AsString())
-	// }
 
 	origin := models.NewGeoPos(from.Lat, from.Long)
 	var destinies []models.GeoPos
@@ -52,71 +124,10 @@ func worker(wg *sync.WaitGroup, atg models.AppleTokenGetter, from *models.Addres
 		panic(err.Error())
 	}
 
-	return db.Create(result).Error
-}
-
-func MainRoutine() error {
-	start := time.Now()
-
-	file, err := os.OpenFile("../misc/distritos.csv", os.O_RDWR|os.O_CREATE, os.ModePerm)
-	if err != nil {
-		fmt.Print("err", err.Error())
-		panic(err)
-	}
-	defer file.Close()
-
-	var all []*models.Address
-	err = gocsv.UnmarshalFile(file, &all)
+	err = db.Create(result).Error
 	if err != nil {
 		return err
 	}
 
-	db, err := database.GetConn()
-	if err != nil {
-		return err
-	}
-
-	var tokens []entity.Token
-	db = db.Model(&entity.Token{}).Where("createdAt >= DATEADD(week, -1, GETDATE())").First(&tokens)
-	if db.Error != nil {
-		return db.Error
-	}
-
-	atg, err := entity.ExtractToken(tokens[0].Value)
-	if db.Error != nil {
-		return db.Error
-	}
-
-	var wg sync.WaitGroup
-	for i, ads0 := range all {
-		vec := append(all[:i], all[i+1:]...)
-		if !atg.IsValid() {
-			err := atg.Renew()
-			if err != nil {
-				return err
-			}
-		}
-		for i := 0; i < len(vec); i += 10 {
-			wg.Add(1)
-			if i+9 < len(vec) {
-				go func() {
-					err = worker(&wg, atg, ads0, vec[i:i+9])
-				}()
-				if err != nil {
-					return err
-				}
-				continue
-			}
-			go func() {
-				err = worker(&wg, atg, ads0, vec[i:])
-			}()
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	wg.Wait()
-	log.WriteLog(log.LogOk, "routine completed in "+time.Since(start).String(), "")
-	return nil
+	return database.CloseConn(db)
 }

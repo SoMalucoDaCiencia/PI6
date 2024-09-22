@@ -4,6 +4,7 @@ import (
 	"PI6/models"
 	share "PI6/share"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -13,8 +14,8 @@ import (
 
 type Register struct {
 	ID             uint64             `json:"id"             gorm:"column:id;primary_key;auto_increment;notnull"`
-	Origin         string             `json:"origin"         gorm:"type:varchar(9);primaryKey;autoIncrement:false;notnull"`
-	Destiny        string             `json:"destiny"        gorm:"type:varchar(9);primaryKey;autoIncrement:false;notnull"`
+	Origin         string             `json:"origin"         gorm:"type:varchar(36);primaryKey;autoIncrement:false;notnull"`
+	Destiny        string             `json:"destiny"        gorm:"type:varchar(36);primaryKey;autoIncrement:false;notnull"`
 	CreatedAt      time.Time          `json:"createdAt"      gorm:"column:createdAt;notnull"`
 	Distance       int                `json:"distance"       gorm:"column:distance;notnull"`
 	TimeAutomobile int                `json:"timeAutomobile" gorm:"column:timeAutomobile;notnull"`
@@ -25,6 +26,9 @@ type Register struct {
 }
 
 func (this *Register) BeforeCreate(db *gorm.DB) error {
+	if this.Origin == this.Destiny {
+		return errors.New("origin and Destiny cannot be the same")
+	}
 	return nil
 }
 
