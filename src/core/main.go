@@ -10,18 +10,24 @@ import (
 
 func main() {
 
+	// Cria as variáveis de ambiente.
+	// ######################################################
 	err := share.Setup()
 	if err != nil {
 		panic(fmt.Errorf("an error occurred while starting application: %v", err.Error()))
 	}
 	log.WriteLog(log.LogOk, "environment variables set up successfully", "")
 
+	// Checa o banco de dados e cria os modelos se necessário.
+	// ######################################################
 	err = database.CheckDatabase()
 	if err != nil {
 		panic(fmt.Errorf("an error occurred while starting application: %v", err.Error()))
 	}
 	log.WriteLog(log.LogOk, "SQL Server is up and running", "")
 
+	// Cria as rotinas pra rodar a cada 3 horas.
+	// ######################################################
 	err = routine.LaunchCronTasks()
 	if err != nil {
 		panic(fmt.Errorf("an error occurred while starting application: %v", err.Error()))
@@ -29,5 +35,6 @@ func main() {
 	log.WriteLog(log.LogOk, "cron launched with success", "")
 
 	// Bloqueie indefinidamente
+	// ######################################################
 	<-make(chan struct{})
 }

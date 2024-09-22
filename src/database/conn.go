@@ -30,11 +30,9 @@ func CloseConn(db *gorm.DB) error {
 		return err
 	}
 
-	// Close
 	return sqlDB.Close()
 }
 
-// Get connection
 func GetConn() (*gorm.DB, error) {
 
 	newLogger := logger.New(

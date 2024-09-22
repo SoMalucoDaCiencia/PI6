@@ -37,7 +37,7 @@ func (this *Token) ToString() string {
 
 func ExtractToken(seedToken string) (ret models.AppleTokenGetter, err error) {
 
-	response := []byte{}
+	var response []byte
 	headers := map[string]string{
 		"Host":          "go-app",
 		"Authorization": "Bearer " + seedToken,

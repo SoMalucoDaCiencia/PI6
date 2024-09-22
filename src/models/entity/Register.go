@@ -2,7 +2,7 @@ package entity
 
 import (
 	"PI6/models"
-	share "PI6/share"
+	"PI6/share"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -52,19 +52,23 @@ func (this *Register) AsString() string {
 	return string(data)
 }
 
-func ExtractRegister(token string, origin models.GeoPos, destiny []models.GeoPos) (ret []Register, err error) {
+func ExtractRegister(token string, origin *models.Address, destiny []*models.Address) (ret []Register, err error) {
 
-	response := []byte{}
+	var response []byte
 	headers := map[string]string{
 		"Host":          "go-app",
 		"Authorization": "Bearer " + token,
 	}
 
+	// Ajusta a URL com todas as localizações
+	// ######################################################
 	url := fmt.Sprintf(share.AppleURI, fmt.Sprintf("%.6f,%.6f", origin.Lat, origin.Long))
 	for _, gp := range destiny {
 		url += fmt.Sprintf("%g,%g|", gp.Lat, gp.Long)
 	}
 
+	// Cria 3 requisições para 3 transportes diferentes
+	// ######################################################
 	var arr [3]models.AppleResponse
 	for i, str := range []models.TransportEnum{models.Automobile, models.Transit, models.Walking} {
 		urlFinal := url[:len(url)-2] + fmt.Sprintf("&transportType=%s", str)

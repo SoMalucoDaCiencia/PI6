@@ -11,7 +11,9 @@ func LaunchCronTasks() (err error) {
 
 	s := gocron.NewScheduler(time.UTC)
 
-	if _, err = s.Every(1).Minutes().Do(func() {
+	// Roda a MainRoutine a cada 3 horas.
+	// ######################################################
+	if _, err = s.Every(3).Hours().Do(func() {
 		if err := MainRoutine(); err != nil {
 			log.WriteLog(log.LogErr, err.Error(), "database")
 		}

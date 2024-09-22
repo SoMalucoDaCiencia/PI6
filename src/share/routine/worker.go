@@ -25,7 +25,7 @@ func MainRoutine() error {
 	}
 	defer file.Close()
 
-	// Faz o parse para os objetos.
+	// Faz o parse dos objetos.
 	// ######################################################
 	var all []*models.Address
 	err = gocsv.UnmarshalFile(file, &all)
@@ -79,14 +79,16 @@ func MainRoutine() error {
 		// ######################################################
 		for i := 0; i < len(vec); i += 10 {
 			wg.Add(1)
-			if i+9 < len(vec) {
-				callWorker(&wg, atg, ad0, vec[i:i+9])
+			if i+10 < len(vec) {
+				callWorker(&wg, atg, ad0, vec[i:i+10])
 				continue
 			}
 			callWorker(&wg, atg, ad0, vec[i:])
 		}
 	}
 
+	// Espera todas as threads e finaliza a rotina.
+	// ######################################################
 	wg.Wait()
 	log.WriteLog(log.LogOk, "routine completed in "+time.Since(start).String(), "")
 	return nil
@@ -98,7 +100,7 @@ func callWorker(wg *sync.WaitGroup, atg models.AppleTokenGetter, ad0 *models.Add
 	go func() {
 		err := worker(wg, atg, ad0, to)
 		if err != nil {
-			Pendencies["ds"] = append(Pendencies["dsa"], to)
+			Pendencies[ad0.GetUuid()] = append(Pendencies[ad0.GetUuid()], to)
 		}
 	}()
 }
@@ -106,28 +108,28 @@ func callWorker(wg *sync.WaitGroup, atg models.AppleTokenGetter, ad0 *models.Add
 func worker(wg *sync.WaitGroup, atg models.AppleTokenGetter, from *models.Address, to []*models.Address) error {
 	defer wg.Done()
 
+	// Abre uma conexão com o banco.
+	// ######################################################
 	db, err := database.GetConn()
 	if err != nil {
 		return err
 	}
 
-	origin := models.NewGeoPos(from.Lat, from.Long)
-	var destinies []models.GeoPos
-	for _, add := range to {
-		destinies = append(destinies, models.NewGeoPos(add.Lat, add.Long))
-	}
-
-	result, err := entity.ExtractRegister(atg.AccessToken, origin, destinies)
+	result, err := entity.ExtractRegister(atg.AccessToken, from, to)
 	if err != nil {
 		err = fmt.Errorf("an error occurred while extracting register: %v", err.Error())
 		log.WriteLog(log.LogErr, err.Error(), "apple")
 		panic(err.Error())
 	}
 
+	// Faz a inserção no banco.
+	// ######################################################
 	err = db.Create(result).Error
 	if err != nil {
 		return err
 	}
 
+	// Fecha a conexão.
+	// ######################################################
 	return database.CloseConn(db)
 }
