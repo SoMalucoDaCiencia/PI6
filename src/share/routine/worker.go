@@ -108,7 +108,7 @@ func callWorker(async bool, wg *sync.WaitGroup, atg models.AppleTokenGetter, ad0
 		err := worker(nil, atg, ad0, to)
 		if err != nil {
 			log.WriteLog(log.LogErr, err.Error(), "")
-			Pendencies[ad0.GetUuid()] = append(Pendencies[ad0.GetUuid()], to)
+			// Pendencies[ad0.GetUuid()] = append(Pendencies[ad0.GetUuid()], to)
 		}
 		return
 	}
@@ -116,7 +116,7 @@ func callWorker(async bool, wg *sync.WaitGroup, atg models.AppleTokenGetter, ad0
 		err := worker(wg, atg, ad0, to)
 		if err != nil {
 			log.WriteLog(log.LogErr, err.Error(), "")
-			Pendencies[ad0.GetUuid()] = append(Pendencies[ad0.GetUuid()], to)
+			// Pendencies[ad0.GetUuid()] = append(Pendencies[ad0.GetUuid()], to)
 		}
 	}()
 }
