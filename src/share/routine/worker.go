@@ -47,6 +47,10 @@ func MainRoutine(async bool) error {
 	var tokens []entity.Token
 	db = db.Model(&entity.Token{}).Where("createdAt >= DATEADD(week, -1, GETDATE())").First(&tokens)
 	if db.Error != nil {
+		if db.Error.Error() == "record not found" {
+			log.WriteLog(log.LogWarn, "No token has been found on database.", "")
+			return nil
+		}
 		return db.Error
 	}
 
