@@ -2,7 +2,7 @@
 
 ### Required dependencies
  - docker/docker-compose
- - go:1.21
+ - go:1.22
  - make
 
 ### Run project
