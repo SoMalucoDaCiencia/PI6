@@ -6,8 +6,6 @@ import (
 )
 
 type Chemical struct {
-	IEntity
-
 	ID           uint64 `json:"id"           gorm:"column:id;primary_key;auto_increment;notnull"`
 	EAN          string `json:"ean"          gorm:"column:ean;notnull"`
 	SKU          string `json:"sku"          gorm:"column:sku;notnull"`

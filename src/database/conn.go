@@ -21,7 +21,7 @@ func CheckDatabase() error {
 		return err
 	}
 
-	return db.AutoMigrate(&entity.Register{}, &entity.Token{})
+	return db.AutoMigrate(&entity.Chemical{}, &entity.PriceUnity{})
 }
 
 func CloseConn(db *gorm.DB) error {
