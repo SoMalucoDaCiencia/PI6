@@ -11,5 +11,5 @@ type IEntity interface {
 	callbacks.BeforeUpdateInterface
 	callbacks.BeforeDeleteInterface
 
-	ToString() string
+	AsString() string
 }
