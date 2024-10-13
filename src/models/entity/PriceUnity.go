@@ -8,13 +8,13 @@ import (
 )
 
 type PriceUnity struct {
-	ID         uint64    `json:"id"         gorm:"column:id;primary_key;auto_increment;notnull"`
+	ID         *uint64   `json:"id"         gorm:"column:id;primary_key;auto_increment;notnull"`
 	Price      float64   `json:"price"      gorm:"column:price;notnull"`
 	CreatedAt  time.Time `json:"createdAt"  gorm:"column:createdAt;notnull"`
 	ChemicalID uint64    `json:"chemicalID" gorm:"column:chemicalID;"`
 
 	// Many-to-One
-	Chemical Chemical `json:"chemical" gorm:"foreignKey:ChemicalID;references:ID"`
+	Chemical *Chemical `json:"chemical" gorm:"foreignKey:ChemicalID;references:ID"`
 }
 
 func (this *PriceUnity) TableName() string {

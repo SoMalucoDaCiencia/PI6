@@ -3,7 +3,9 @@ module PI6
 go 1.22
 
 require (
+	github.com/artking28/myGoUtils v1.2.0
 	github.com/go-co-op/gocron v1.37.0
+	github.com/gocolly/colly v1.2.0
 	github.com/gocolly/colly/v2 v2.1.0
 	github.com/google/uuid v1.6.0
 	github.com/spf13/viper v1.19.0

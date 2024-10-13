@@ -1,9 +1,15 @@
 package share
 
 import (
+	"PI6/models"
+	"crypto/tls"
 	"encoding/binary"
+	"fmt"
 	"github.com/google/uuid"
 	"math"
+	"math/rand"
+	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -24,4 +30,36 @@ func FloatsFromUUID(uuid []byte) (float64, float64) {
 	f1 := math.Float64frombits(binary.BigEndian.Uint64(uuid[:8]))
 	f2 := math.Float64frombits(binary.BigEndian.Uint64(uuid[8:16]))
 	return f1, f2
+}
+
+func GetRandomProxy(proxies []models.ProxyObj) *http.Client {
+	rand.Seed(time.Now().UnixNano())
+	selectedProxy := proxies[rand.Intn(len(proxies))]
+
+	var transport *http.Transport
+	urll, err := url.Parse(fmt.Sprintf("http://%s:%d", selectedProxy.Ip, selectedProxy.Port))
+	if err != nil {
+		panic(err)
+	}
+
+	//switch selectedProxy.Protocol { // Seleciona o primeiro protocolo
+	//case "http":
+	transport = &http.Transport{
+		Proxy: http.ProxyURL(urll),
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	//case "socks4", "socks5":
+	//    dialer, _ := proxy.SOCKS5("tcp", selectedProxy.Proxy, nil, proxy.Direct)
+	//    transport = &http.Transport{
+	//        DialContext: func(ctx context.Context, network string, addr string) (net.Conn, error) {
+	//            return dialer.Dial("tcp", addr)
+	//        },
+	//    }
+	//}
+
+	return &http.Client{
+		Transport: transport,
+	}
 }
