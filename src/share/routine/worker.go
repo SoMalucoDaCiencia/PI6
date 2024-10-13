@@ -57,7 +57,7 @@ func MainRoutine() error {
 	var insertsPrices []entity.PriceUnity
 	var count float64
 
-	for _, group := range allLinks {
+	for _, group := range allLinks[:7] {
 
 		// All group SKU's
 		base := "https://www.drogariasaopaulo.com.br/api/catalog_system/pub/products/search?_from=0&_to=49"
@@ -142,9 +142,9 @@ func MainRoutine() error {
 	}
 
 	if len(inserts) > 0 {
-		db = db.Create(inserts)
-		if db.Error != nil {
-			panic(db.Error)
+		db = share.BigInsert(db, inserts, 250)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -154,9 +154,10 @@ func MainRoutine() error {
 			return err
 		}
 
-		db = db.Model(entity.PriceUnity{}).Omit("Chemical").Save(insertsPrices)
-		if db.Error != nil {
-			panic(err)
+		db = db.Model(entity.PriceUnity{}).Omit("Chemical")
+		db = share.BigInsert(db, insertsPrices, 300)
+		if err != nil {
+			return err
 		}
 	}
 

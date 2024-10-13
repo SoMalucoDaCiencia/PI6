@@ -6,10 +6,28 @@ import (
 	"fmt"
 	mgu "github.com/artking28/myGoUtils"
 	"github.com/gocolly/colly"
+	"gorm.io/gorm"
 	"os"
 	"strings"
 	"time"
 )
+
+func BigInsert[T any](db *gorm.DB, vector []T, blockSize int) *gorm.DB {
+	for i := 0; i < len(vector); i += blockSize {
+		if i+blockSize >= len(vector) {
+			db = db.Create(vector[i:])
+			if db.Error != nil {
+				panic(db.Error)
+			}
+			continue
+		}
+		db = db.Create(vector[i : i+blockSize])
+		if db.Error != nil {
+			panic(db.Error)
+		}
+	}
+	return db
+}
 
 func FindSkuPacks() [][50]string {
 	tcl := mgu.NewThreadControl(10000)
