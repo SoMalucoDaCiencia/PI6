@@ -57,7 +57,7 @@ func MainRoutine() error {
 	var insertsPrices []entity.PriceUnity
 	var count float64
 
-	for _, group := range allLinks[:7] {
+	for _, group := range allLinks {
 
 		// All group SKU's
 		base := "https://www.drogariasaopaulo.com.br/api/catalog_system/pub/products/search?_from=0&_to=49"
