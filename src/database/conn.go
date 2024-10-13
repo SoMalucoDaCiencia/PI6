@@ -70,8 +70,8 @@ func GetConn() (*gorm.DB, error) {
 // GetDSN get DB's DSN based on env vars
 func getDSN() string {
 
-	schema := viper.GetString("DB_SCHEMA")
-	if len(schema) == 0 {
+	schemaName := viper.GetString("DB_SCHEMA")
+	if len(schemaName) == 0 {
 		log.Fatal(errors.New("unauthorized, expected an schema for db"))
 	}
 
@@ -95,5 +95,5 @@ func getDSN() string {
 		log.Fatal(errors.New("unauthorized, expected an port for db"))
 	}
 
-	return fmt.Sprintf("sqlserver://%s:%s@%s:%d?database=%s", user, password, address, port, schema)
+	return fmt.Sprintf("sqlserver://%s:%s@%s:%d?database=%s", user, password, address, port, schemaName)
 }

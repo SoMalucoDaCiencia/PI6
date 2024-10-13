@@ -13,8 +13,8 @@ func LaunchCronTasks() (err error) {
 
 	// Roda a MainRoutine a cada 3 horas.
 	// ######################################################
-	if _, err = s.Every(3).Hours().Do(func() {
-		if err := MainRoutine(true); err != nil {
+	if _, err = s.Every(1).Days().Do(func() {
+		if err := MainRoutine(); err != nil {
 			log.WriteLog(log.LogErr, err.Error(), "database")
 		}
 	}); err != nil {

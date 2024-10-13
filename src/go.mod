@@ -12,7 +12,7 @@ require (
 	golang.org/x/net v0.23.0
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/sqlserver v1.5.3
-	gorm.io/gorm v1.25.11
+	gorm.io/gorm v1.25.12
 )
 
 require (

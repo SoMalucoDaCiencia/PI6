@@ -8,21 +8,39 @@ import (
 	yaml "gopkg.in/yaml.v2"
 	"gorm.io/gorm"
 	"net/http"
+	"time"
 )
 
-type Chemical struct {
-	ID              *uint64 `json:"id,omitempty"              gorm:"column:id;primary_key;auto_increment;notnull"`
-	ExternalId      string  `json:"productId,omitempty"       gorm:"column:externalId;notnull"`
-	Ean             string  `json:"ean,omitempty"             gorm:"column:ean;notnull"`
-	ProductTittle   string  `json:"productTitle,omitempty"    gorm:"column:productTittle;notnull"`
-	Brand           string  `json:"brand,omitempty"           gorm:"column:brand;notnull"`
-	Link            string  `json:"link,omitempty"            gorm:"column:link;notnull"`
-	MeasurementUnit string  `json:"measurementUnit,omitempty" gorm:"column:measurementUnit;notnull"`
-	UnitMultiplier  float64 `json:"unitMultiplier,omitempty"  gorm:"column:unitMultiplier;notnull"`
+type (
+	Chemical struct {
+		ID              *uint64 `json:"id,omitempty"              gorm:"column:id;primary_key;auto_increment;notnull"`
+		ExternalId      string  `json:"productId,omitempty"       gorm:"column:externalId;notnull;unique"`
+		Ean             string  `json:"ean,omitempty"             gorm:"column:ean;notnull;unique"`
+		ProductTittle   string  `json:"productTitle,omitempty"    gorm:"column:productTittle;notnull"`
+		Brand           string  `json:"brand,omitempty"           gorm:"column:brand;notnull"`
+		Link            string  `json:"link,omitempty"            gorm:"column:link;notnull"`
+		MeasurementUnit string  `json:"measurementUnit,omitempty" gorm:"column:measurementUnit;notnull"`
+		UnitMultiplier  float64 `json:"unitMultiplier,omitempty"  gorm:"column:unitMultiplier;notnull"`
 
-	// One-to-Many
-	Prices []PriceUnity `json:"prices,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:ChemicalID"`
-}
+		// One-to-Many
+		Prices []PriceUnity `json:"prices,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:ChemicalID"`
+	}
+
+	ChemicalJson struct {
+		Chemical
+		BrandId uint64 `json:"brandId"`
+		Items   []struct {
+			Ean             string  `json:"ean"`
+			MeasurementUnit string  `json:"measurementUnit"`
+			UnitMultiplier  float64 `json:"unitMultiplier"`
+			Sellers         []struct {
+				CommertialOffer struct {
+					Price float64 `json:"Price"`
+				} `json:"commertialOffer"`
+			} `json:"sellers"`
+		} `json:"items"`
+	}
+)
 
 func (this *Chemical) TableName() string {
 	return "DB_CHEMICAL"
@@ -81,4 +99,20 @@ func NewChemical(href string, client *http.Client) (*Chemical, error) {
 	}
 	che := res[0].Adapt()
 	return &che, nil
+}
+
+func (this ChemicalJson) Adapt() Chemical {
+	return Chemical{
+		ExternalId:      this.ExternalId,
+		Ean:             this.Items[0].Ean,
+		ProductTittle:   this.ProductTittle,
+		Brand:           this.Brand,
+		Link:            this.Link,
+		MeasurementUnit: this.Items[0].MeasurementUnit,
+		UnitMultiplier:  this.Items[0].UnitMultiplier,
+		Prices: []PriceUnity{{
+			Price:     this.Items[0].Sellers[0].CommertialOffer.Price,
+			CreatedAt: time.Now(),
+		}},
+	}
 }

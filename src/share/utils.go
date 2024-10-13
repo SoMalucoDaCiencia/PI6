@@ -2,64 +2,116 @@ package share
 
 import (
 	"PI6/models"
-	"crypto/tls"
-	"encoding/binary"
+	"PI6/share/log"
 	"fmt"
-	"github.com/google/uuid"
-	"math"
-	"math/rand"
-	"net/http"
-	"net/url"
+	mgu "github.com/artking28/myGoUtils"
+	"github.com/gocolly/colly"
+	"os"
+	"strings"
 	"time"
 )
 
-func GetTimestamps(year, month, day int) (time.Time, time.Time) {
-	start := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
-	end := time.Date(year, time.Month(month), day, 23, 59, 59, 999999999, time.UTC)
-	return start, end
+func FindSkuPacks() [][50]string {
+	tcl := mgu.NewThreadControl(10000)
+
+	var generalLinkList [][50]string
+	var lastPack [50]string
+	var lastInsertion int
+	for _, brandName := range models.GetChemicalBrand() {
+
+		local := mgu.NewThreadControl(100)
+		counter := 50
+		page := 1
+
+		tcl.Begin()
+		go func() {
+
+			for ; counter >= 50; page++ {
+				counter = 0
+				c := colly.NewCollector()
+				c.OnHTML("div.main div[data-trustvox-product-code]", func(e *colly.HTMLElement) {
+					local.Begin()
+					go func() {
+						tcl.Lock()
+						counter++
+						if lastInsertion >= 50 {
+							generalLinkList = append(generalLinkList, lastPack)
+							lastPack = [50]string{}
+							lastInsertion = 0
+						}
+						if len(fmt.Sprintf("%s", e.Attr("data-trustvox-product-code"))) > 0 {
+							lastPack[lastInsertion] = e.Attr("data-trustvox-product-code")
+							lastInsertion++
+						}
+						tcl.Unlock()
+						local.Done()
+					}()
+				})
+
+				err := c.Visit(fmt.Sprintf("https://www.drogariasaopaulo.com.br/medicamentos/%s?PS=50&PageNumber=%d", brandName, page))
+				if err != nil {
+					log.WriteLog(log.LogErr, fmt.Sprintf("A error occurred at %s in page number %d [%s]", brandName, page, err.Error()), "")
+				}
+				local.Wait()
+			}
+			tcl.Done()
+		}()
+	}
+	tcl.Wait()
+
+	return generalLinkList
 }
 
-func FloatsAsUUID(f1, f2 float64) string {
-	var vec []byte
-	vec = binary.BigEndian.AppendUint64(vec, math.Float64bits(f1))
-	vec = binary.BigEndian.AppendUint64(vec, math.Float64bits(f2))
-	return uuid.NewMD5(uuid.NameSpaceDNS, vec[:]).String()
-}
+func FindAllLinks(saveToFile bool) []string {
+	tcl := mgu.NewThreadControl(300)
 
-func FloatsFromUUID(uuid []byte) (float64, float64) {
-	f1 := math.Float64frombits(binary.BigEndian.Uint64(uuid[:8]))
-	f2 := math.Float64frombits(binary.BigEndian.Uint64(uuid[8:16]))
-	return f1, f2
-}
+	var generalLinkList []string
+	for _, brandName := range models.GetChemicalBrand() {
 
-func GetRandomProxy(proxies []models.ProxyObj) *http.Client {
-	rand.Seed(time.Now().UnixNano())
-	selectedProxy := proxies[rand.Intn(len(proxies))]
+		local := mgu.NewThreadControl(100)
+		counter := 50
+		page := 1
 
-	var transport *http.Transport
-	urll, err := url.Parse(fmt.Sprintf("http://%s:%d", selectedProxy.Ip, selectedProxy.Port))
-	if err != nil {
-		panic(err)
+		tcl.Begin()
+		go func() {
+
+			var localLinkList []string
+			for ; counter >= 50; page++ {
+				counter = 0
+				c := colly.NewCollector()
+				c.OnHTML("div.main a.collection-link", func(e *colly.HTMLElement) {
+					local.Begin()
+					go func() {
+						local.Lock()
+						counter++
+						localLinkList = append(localLinkList, e.Attr("href"))
+						local.Unlock()
+						local.Done()
+					}()
+				})
+
+				err := c.Visit(fmt.Sprintf("https://www.drogariasaopaulo.com.br/medicamentos/%s?PS=50&PageNumber=%d", brandName, page))
+				if err != nil {
+					log.WriteLog(log.LogErr, fmt.Sprintf("A error occurred at %s in page number %d [%s]", brandName, page, err.Error()), "")
+				}
+				local.Wait()
+			}
+
+			local.Lock()
+			generalLinkList = append(generalLinkList, localLinkList...)
+			local.Unlock()
+			tcl.Done()
+		}()
 	}
+	tcl.Wait()
 
-	//switch selectedProxy.Protocol { // Seleciona o primeiro protocolo
-	//case "http":
-	transport = &http.Transport{
-		Proxy: http.ProxyURL(urll),
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
+	if saveToFile && len(generalLinkList) > 0 {
+		content := []byte(strings.Join(generalLinkList, "\n"))
+		name := fmt.Sprintf("../misc/productsLinks_%d.txt", time.Now().Weekday())
+		err := os.WriteFile(name, content, 666)
+		if err != nil {
+			log.WriteLog(log.LogErr, err.Error(), "")
+		}
 	}
-	//case "socks4", "socks5":
-	//    dialer, _ := proxy.SOCKS5("tcp", selectedProxy.Proxy, nil, proxy.Direct)
-	//    transport = &http.Transport{
-	//        DialContext: func(ctx context.Context, network string, addr string) (net.Conn, error) {
-	//            return dialer.Dial("tcp", addr)
-	//        },
-	//    }
-	//}
-
-	return &http.Client{
-		Transport: transport,
-	}
+	return generalLinkList
 }

@@ -36,5 +36,5 @@ func main() {
 
 	// Bloqueie indefinidamente
 	// ######################################################
-	<-make(chan struct{})
+	<-make(chan bool)
 }

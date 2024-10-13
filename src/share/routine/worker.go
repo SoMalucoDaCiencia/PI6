@@ -2,94 +2,169 @@ package routine
 
 import (
 	"PI6/database"
+	"PI6/models/entity"
+	"PI6/share"
 	"PI6/share/log"
+	"encoding/json"
 	"fmt"
-	"math/rand"
-	"sync"
+	mgu "github.com/artking28/myGoUtils"
+	"math"
+	"net/http"
+	"strings"
 	"time"
 )
 
-var AppleRestCalls = 0
-
-func MainRoutine(async bool) error {
+func MainRoutine() error {
+	tcl := mgu.NewThreadControl(30)
 	start := time.Now()
 
-	// Abre uma conexão com o banco.
-	// ######################################################
-	_, err := database.GetConn()
-	if err != nil {
-		return err
-	}
+	// Pega todos os SKU's divididos em pacotes de 50 elementos
+	// ########################################################################
+	allLinks := share.FindSkuPacks()
 
-	// Faz um for-loop por todos os remedios.
-	// ######################################################
-	var wg sync.WaitGroup
-	for {
-		if rand.Int()%2 == 0 {
-			break
+	// Sets para mapear produtos ja existentes
+	// ########################################################################
+	setSku := map[string]*uint64{}
+	setEan := map[string]*uint64{}
+
+	// Busca os produtos e os salva nos sets
+	// ########################################################################
+	tcl.Begin()
+	go func() {
+		db, err := database.GetConn()
+		if err != nil {
+			panic(err)
 		}
-		wg.Add(1)
+
+		var vector []entity.Chemical
+		db = db.Model(entity.Chemical{}).Find(&vector)
+		if db.Error != nil {
+			log.WriteLog(log.LogErr, db.Error.Error(), "database")
+		}
+
+		for _, chemical := range vector {
+			tcl.Lock()
+			setSku[chemical.ExternalId] = chemical.ID
+			setEan[chemical.Ean] = chemical.ID
+			tcl.Unlock()
+		}
+		tcl.Done()
+	}()
+
+	// Produtos q serão salvos e contagem
+	// ########################################################################
+	var inserts []entity.Chemical
+	var insertsPrices []entity.PriceUnity
+	var count float64
+
+	for _, group := range allLinks[:1] {
+
+		// All group SKU's
+		base := "https://www.drogariasaopaulo.com.br/api/catalog_system/pub/products/search?_from=0&_to=49"
+		for _, v := range group {
+			add := fmt.Sprintf("&fq=skuId:%s", v)
+			if add != "&fq=skuId:" {
+				base += add
+			}
+		}
+
+		tcl.Begin()
 		go func() {
-			time.Sleep(5 * time.Second)
+
+			var res []byte
+			var allProds []entity.ChemicalJson
+			var err error
+
+			eCode, err := share.Rest(http.MethodGet, base, &res, nil, nil, nil)
+			if eCode == 500 {
+				time.Sleep(time.Second)
+				eCode, err = share.Rest(http.MethodGet, base, &res, nil, nil, nil)
+			}
+			if err != nil {
+				log.WriteLog(log.LogErr, err.Error(), "drogariasaopaulo")
+				tcl.Done()
+				return
+			}
+
+			if err != nil {
+				println(base)
+				log.WriteLog(log.LogErr, err.Error(), "drogariasaopaulo")
+				tcl.Done()
+				return
+			}
+
+			err = json.Unmarshal(res, &allProds)
+			if err != nil {
+				panic(err)
+			}
+
+			for _, v := range allProds {
+				inserts = append(inserts, v.Adapt())
+			}
+
+			tcl.Lock()
+			count++
+			time.Sleep(750 * time.Millisecond)
+			n := count / float64(len(allLinks)) * 100
+			relative := int(math.Floor(n))
+			hashtags := strings.Repeat("#", relative)
+			dashes := strings.Repeat("-", 100-relative)
+			fmt.Printf("\rLoading %s%s %.4f%%", hashtags, dashes, n)
+			tcl.Unlock()
+			tcl.Done()
 		}()
 	}
 
 	// Espera todas as threads e finaliza a rotina.
-	// ######################################################
-	if async {
-		wg.Wait()
+	// ########################################################################
+	tcl.Wait()
+	println()
+
+	// Abre uma conexão com o banco.
+	// ########################################################################
+	db, err := database.GetConn()
+	if err != nil {
+		return err
 	}
-	log.WriteLog(log.LogOk, fmt.Sprintf("routine completed in %s with %d calls", time.Since(start).String(), AppleRestCalls), "")
-	AppleRestCalls = 0
+
+	// Faz um for-loop por todos os remedios e os insere se n existirem
+	// ########################################################################
+	for i := 0; i < len(inserts); i++ {
+		novo := inserts[i]
+		if setSku[novo.ExternalId] != nil || setEan[novo.Ean] != nil {
+			inserts = append(inserts[:i], inserts[i+1:]...)
+			i--
+
+			price := novo.Prices[0]
+			price.ChemicalID = setSku[novo.ExternalId]
+			insertsPrices = append(insertsPrices, price)
+		}
+	}
+
+	if len(inserts) > 0 {
+		db = db.Create(inserts)
+		if db.Error != nil {
+			panic(db.Error)
+		}
+	}
+
+	if len(insertsPrices) > 0 {
+		db, err = database.GetConn()
+		if err != nil {
+			return err
+		}
+
+		db = db.Model(entity.PriceUnity{}).Omit("Chemical").Save(insertsPrices)
+		if db.Error != nil {
+			panic(err)
+		}
+	}
+
+	// Finaliza o programa
+	// ########################################################################
+	timeSince := time.Since(start).String()
+	size := len(allLinks)
+	str := fmt.Sprintf("Completed. %d elements has been extracted in %s", size, timeSince)
+	log.WriteLog(log.LogOk, str, "")
 	return nil
 }
-
-//func callWorker(async bool, wg *sync.WaitGroup, atg models.AppleTokenGetter, ad0 *models.Address, to []*models.Address) {
-//	if !async {
-//		err := worker(nil, atg, ad0, to)
-//		if err != nil {
-//			log.WriteLog(log.LogErr, err.Error(), "")
-//			// Pendencies[ad0.GetUuid()] = append(Pendencies[ad0.GetUuid()], to)
-//		}
-//		return
-//	}
-//	go func() {
-//		err := worker(wg, atg, ad0, to)
-//		if err != nil {
-//			log.WriteLog(log.LogErr, err.Error(), "")
-//			// Pendencies[ad0.GetUuid()] = append(Pendencies[ad0.GetUuid()], to)
-//		}
-//	}()
-//}
-//
-//func worker(wg *sync.WaitGroup, atg models.AppleTokenGetter, from *models.Address, to []*models.Address) error {
-//	if wg != nil {
-//		defer wg.Done()
-//	}
-//
-//	// Abre uma conexão com o banco.
-//	// ######################################################
-//	db, err := database.GetConn()
-//	if err != nil {
-//		return err
-//	}
-//
-//	result, err := entity.ExtractRegister(atg.AccessToken, from, to)
-//	if err != nil {
-//		err = fmt.Errorf("an error occurred while extracting register: %v", err.Error())
-//		log.WriteLog(log.LogErr, err.Error(), "apple")
-//		panic(err.Error())
-//	}
-//	AppleRestCalls += 3
-//
-//	// Faz a inserção no banco.
-//	// ######################################################
-//	err = db.Create(result).Error
-//	if err != nil {
-//		return err
-//	}
-//
-//	// Fecha a conexão.
-//	// ######################################################
-//	return database.CloseConn(db)
-//}
