@@ -6,12 +6,14 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"golang.org/x/net/html/charset"
 )
 
 func Rest(method, uri string, returnJson *[]byte, headers map[string]string, query map[string]string, bodyInput []byte) (int, error) {
-	return RestClient(http.DefaultClient, method, uri, returnJson, headers, query, bodyInput)
+	client := &http.Client{Timeout: time.Second * 30}
+	return RestClient(client, method, uri, returnJson, headers, query, bodyInput)
 }
 
 func RestClient(httpClient *http.Client, method string, uri string, returnJson *[]byte, headers map[string]string, query map[string]string, bodyInput []byte) (int, error) {

@@ -27,29 +27,30 @@ func MainRoutine() error {
 	setSku := map[string]*uint64{}
 	setEan := map[string]*uint64{}
 
+	// Sets para mapear produtos ja repetidos mas q ainda n foram inseridos
+	// ########################################################################
+	newSetSku := mgu.NewSet[string]()
+	newSetEan := mgu.NewSet[string]()
+
 	// Busca os produtos e os salva nos sets
 	// ########################################################################
-	tcl.Begin()
-	go func() {
-		db, err := database.GetConn()
-		if err != nil {
-			panic(err)
-		}
+	db, err := database.GetConn()
+	if err != nil {
+		panic(err)
+	}
 
-		var vector []entity.Chemical
-		db = db.Model(entity.Chemical{}).Find(&vector)
-		if db.Error != nil {
-			log.WriteLog(log.LogErr, db.Error.Error(), "database")
-		}
+	var vector []entity.Chemical
+	db = db.Model(entity.Chemical{}).Find(&vector)
+	if db.Error != nil {
+		log.WriteLog(log.LogErr, db.Error.Error(), "database")
+	}
 
-		for _, chemical := range vector {
-			tcl.Lock()
-			setSku[chemical.ExternalId] = chemical.ID
-			setEan[chemical.Ean] = chemical.ID
-			tcl.Unlock()
-		}
-		tcl.Done()
-	}()
+	for _, chemical := range vector {
+		tcl.Lock()
+		setSku[chemical.ExternalId] = chemical.ID
+		setEan[chemical.Ean] = chemical.ID
+		tcl.Unlock()
+	}
 
 	// Produtos q serão salvos e contagem
 	// ########################################################################
@@ -99,7 +100,14 @@ func MainRoutine() error {
 			}
 
 			for _, v := range allProds {
-				inserts = append(inserts, v.Adapt())
+				prod := v.Adapt()
+				tcl.Lock()
+				if !newSetSku.Has(prod.ExternalId) && !newSetEan.Has(prod.Ean) {
+					inserts = append(inserts, prod)
+					newSetEan.Add(prod.Ean)
+					newSetSku.Add(prod.ExternalId)
+				}
+				tcl.Unlock()
 			}
 
 			tcl.Lock()
@@ -122,7 +130,7 @@ func MainRoutine() error {
 
 	// Abre uma conexão com o banco.
 	// ########################################################################
-	db, err := database.GetConn()
+	db, err = database.GetConn()
 	if err != nil {
 		return err
 	}
@@ -165,7 +173,7 @@ func MainRoutine() error {
 	// ########################################################################
 	timeSince := time.Since(start).String()
 	size := len(allLinks)
-	str := fmt.Sprintf("Completed. %d elements has been extracted in %s", size, timeSince)
+	str := fmt.Sprintf("Completed. %d elements has been extracted in %s", size*50, timeSince)
 	log.WriteLog(log.LogOk, str, "")
 	return nil
 }
