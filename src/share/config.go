@@ -6,9 +6,9 @@ import (
 
 func Setup() error {
 	viper.AutomaticEnv()
-	if !viper.GetBool("DOCKER") {
-		viper.SetConfigFile("../.env")
-		return viper.ReadInConfig()
-	}
+	//if !viper.GetBool("DOCKER") {
+	//viper.SetConfigFile(".env")
+	//return viper.ReadInConfig()
+	//}
 	return nil
 }
